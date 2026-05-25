@@ -1,0 +1,74 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history/
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# Editors and IDEs
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/extensions.json
+
+# Dart / Flutter / Pub
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/.pub-cache/
+**/.pub/
+**/build/
+**/coverage/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+
+# Flutter build outputs
+app.*.symbols
+app.*.map.json
+
+# Android / Gradle
+**/android/.gradle/
+**/android/local.properties
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+**/android/app/*.jks
+**/android/key.properties
+
+# iOS / macOS
+**/ios/Pods/
+**/macos/Pods/
+**/ios/.symlinks/
+**/macos/.symlinks/
+**/ios/Flutter/Flutter.podspec
+**/ios/Runner.xcworkspace/xcuserdata/
+**/macos/Runner.xcworkspace/xcuserdata/
+**/ios/Runner.xcodeproj/xcuserdata/
+**/macos/Runner.xcodeproj/xcuserdata/
+**/*.xcuserstate
+**/DerivedData/
+
+# Web and generated reports
+**/.firebase/
+**/firebase-debug.log
+
+# Environment and local secrets
+.env
+.env.*
+*.keystore
+*.p8
+*.p12
+*.pem
