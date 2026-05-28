@@ -43,3 +43,34 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local environment files
+.env
+.env.*
+!.env.example
+*.env
+
+# Signing keys and certificates
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+key.properties
+*.mobileprovision
+*.cer
+
+# Firebase local/generated configuration
+firebase.json
+.firebaserc
+.firebase/
+lib/firebase_options.dart
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+macos/Runner/GoogleService-Info.plist
+**/GoogleService-Info.plist
+serviceAccountKey.json
+firebase-adminsdk*.json
+*service-account*.json
+*.credentials.json
+*.secret.json
