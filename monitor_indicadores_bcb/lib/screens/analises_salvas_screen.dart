@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -17,7 +20,6 @@ class AnalisesSalvasScreen extends StatefulWidget {
 class _AnalisesSalvasScreenState extends State<AnalisesSalvasScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nomeController = TextEditingController();
-  final _observacaoController = TextEditingController();
   bool _salvando = false;
 
   CollectionReference<Map<String, dynamic>> get _colecao =>
@@ -26,13 +28,74 @@ class _AnalisesSalvasScreenState extends State<AnalisesSalvasScreen> {
   @override
   void dispose() {
     _nomeController.dispose();
-    _observacaoController.dispose();
     super.dispose();
   }
 
-  Future<void> _salvarAnalise() async {
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.draft != null) {
+        _abrirDialogSalvarAnalise();
+      }
+    });
+  }
+
+  Future<void> _abrirDialogSalvarAnalise() async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Salvar nova análise'),
+          content: Form(
+            key: _formKey,
+            child: SizedBox(
+              width: 420,
+              child: TextFormField(
+                controller: _nomeController,
+                validator: _validarNome,
+                textInputAction: TextInputAction.done,
+                decoration: InputDecoration(
+                  labelText: 'Nome da análise',
+                  hintText: 'Ex: Dólar em maio de 2026',
+                  filled: true,
+                  fillColor: const Color(0xFFF4F6FB),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton.icon(
+              onPressed: _salvando
+                  ? null
+                  : () async {
+                      final salvou = await _salvarAnalise();
+                      if (salvou && context.mounted) {
+                        Navigator.of(context).pop();
+                      }
+                    },
+              icon: const Icon(Icons.save_outlined),
+              label: const Text('Salvar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<bool> _salvarAnalise() async {
     if (!_formKey.currentState!.validate()) {
-      return;
+      return false;
     }
 
     final draft = widget.draft;
@@ -42,37 +105,67 @@ class _AnalisesSalvasScreenState extends State<AnalisesSalvasScreen> {
           content: Text('Abra uma consulta analisada para salvar.'),
         ),
       );
-      return;
+      return false;
     }
 
     setState(() => _salvando = true);
 
     try {
+      final ultimoValor = draft.valores.isEmpty
+          ? 0.0
+          : draft.valores.last.valor;
+      final variacao = draft.estatisticas.variacaoPercentual;
+      final direcao = variacao >= 0 ? 'alta' : 'queda';
+      final intensidade = variacao.abs() >= 5
+          ? 'forte'
+          : variacao.abs() >= 2
+          ? 'moderada'
+          : 'leve';
+
+      final conclusao =
+          '${draft.indicador.nome} apresentou $direcao $intensidade de ${variacao.abs().toStringAsFixed(2)}%. \n'
+          'O menor valor foi ${draft.estatisticas.minimo.toStringAsFixed(4)} e o maior foi ${draft.estatisticas.maximo.toStringAsFixed(4)}. \n'
+          'A média ficou em ${draft.estatisticas.media.toStringAsFixed(4)}, com desvio padrão de ${draft.estatisticas.desvioPadrao.toStringAsFixed(4)}.';
+
       await _colecao.add({
         'nome': _nomeController.text.trim(),
-        'observacao': _observacaoController.text.trim(),
         'indicadorNome': draft.indicador.nome,
         'indicadorCodigo': draft.indicador.codigo,
         'dataInicial': draft.dataInicial,
         'dataFinal': draft.dataFinal,
-        'estatisticas': draft.estatisticas.toFirestore(),
+        'estatisticas': {
+          'ultimoValor': ultimoValor,
+          'minimo': draft.estatisticas.minimo,
+          'maximo': draft.estatisticas.maximo,
+          'media': draft.estatisticas.media,
+          'variacaoPercentual': draft.estatisticas.variacaoPercentual,
+          'desvioPadrao': draft.estatisticas.desvioPadrao,
+          'quantidade': draft.valores.length,
+        },
+        'valores': draft.valores.map((item) {
+          return {'data': item.dataFormatada, 'valor': item.valor};
+        }).toList(),
+        'conclusao': conclusao,
         'criadoEm': FieldValue.serverTimestamp(),
       });
 
       _nomeController.clear();
-      _observacaoController.clear();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Analise salva com sucesso.')),
+          const SnackBar(content: Text('Análise salva com sucesso.')),
         );
       }
+
+      return true;
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao salvar analise: $error')),
+          SnackBar(content: Text('Erro ao salvar análise: $error')),
         );
       }
+
+      return false;
     } finally {
       if (mounted) {
         setState(() => _salvando = false);
@@ -137,17 +230,6 @@ class _AnalisesSalvasScreenState extends State<AnalisesSalvasScreen> {
     return null;
   }
 
-  String? _validarObservacao(String? value) {
-    final texto = value?.trim() ?? '';
-    if (texto.isEmpty) {
-      return 'Informe uma observacao';
-    }
-    if (texto.length < 5) {
-      return 'Minimo 5 caracteres';
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     final draft = widget.draft;
@@ -166,67 +248,12 @@ class _AnalisesSalvasScreenState extends State<AnalisesSalvasScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Salvar nova analise',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      draft == null
-                          ? 'Nenhuma analise selecionada no momento.'
-                          : '${draft.indicador.nome} | ${draft.dataInicial} ate ${draft.dataFinal}',
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _nomeController,
-                      validator: _validarNome,
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Nome da analise',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _observacaoController,
-                      validator: _validarObservacao,
-                      maxLines: 2,
-                      decoration: const InputDecoration(
-                        labelText: 'Observacao do grupo',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: _salvando ? null : _salvarAnalise,
-                        icon: _salvando
-                            ? const SizedBox.square(
-                                dimension: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.save_outlined),
-                        label: const Text('Salvar no Firestore'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          Text(
+            'Historico',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
           ),
-          const SizedBox(height: 20),
-          Text('Historico', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 12),
           StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
             stream: _colecao.orderBy('criadoEm', descending: true).snapshots(),
@@ -291,68 +318,237 @@ class _AnaliseSalvaCard extends StatelessWidget {
         ? 'Processando data'
         : DateFormat('dd/MM/yyyy HH:mm').format(analise.criadoEm!);
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        analise.nome,
-                        style: Theme.of(context).textTheme.titleMedium,
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.055),
+            blurRadius: 26,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  Icons.insights_rounded,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      analise.nome,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${analise.indicadorNome} | ${analise.dataInicial} ate ${analise.dataFinal}',
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      analise.indicadorNome,
+                      style: TextStyle(
+                        color: Colors.black.withOpacity(0.58),
+                        fontWeight: FontWeight.w700,
                       ),
-                    ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${analise.dataInicial} até ${analise.dataFinal}',
+                      style: TextStyle(
+                        color: Colors.black.withOpacity(0.45),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Excluir análise',
+                onPressed: onDelete,
+                icon: const Icon(Icons.delete_outline_rounded),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _InfoChip(
+                label: 'Último',
+                value: analise.ultimoValor.toStringAsFixed(4),
+              ),
+              _InfoChip(
+                label: 'Média',
+                value: analise.media.toStringAsFixed(4),
+              ),
+              _InfoChip(
+                label: 'Mínimo',
+                value: analise.minimo.toStringAsFixed(4),
+              ),
+              _InfoChip(
+                label: 'Máximo',
+                value: analise.maximo.toStringAsFixed(4),
+              ),
+              _InfoChip(
+                label: 'Variação',
+                value: '${analise.variacaoPercentual.toStringAsFixed(2)}%',
+              ),
+              _InfoChip(label: 'Registros', value: '${analise.quantidade}'),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F6FB),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Text(
+              analise.conclusao,
+              style: TextStyle(
+                color: Colors.black.withOpacity(0.68),
+                height: 1.4,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(
+                Icons.schedule_rounded,
+                size: 16,
+                color: Colors.black.withOpacity(0.42),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                criadoEm,
+                style: TextStyle(
+                  color: Colors.black.withOpacity(0.48),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => _GraficoAnaliseDialog(analise: analise),
+                  );
+                },
+                icon: const Icon(Icons.show_chart_rounded, size: 18),
+                label: const Text('Gráfico'),
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                IconButton(
-                  tooltip: 'Excluir analise',
-                  onPressed: onDelete,
-                  icon: const Icon(Icons.delete_outline),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GraficoAnaliseDialog extends StatelessWidget {
+  const _GraficoAnaliseDialog({required this.analise});
+
+  final AnaliseSalva analise;
+
+  @override
+  Widget build(BuildContext context) {
+    final spots = [
+      for (var i = 0; i < analise.valores.length; i++)
+        FlSpot(i.toDouble(), (analise.valores[i]['valor'] as num).toDouble()),
+    ];
+
+    final margem = (analise.maximo - analise.minimo).abs() * 0.08;
+    final minY = analise.minimo == analise.maximo
+        ? analise.minimo - 1
+        : analise.minimo - margem;
+    final maxY = analise.minimo == analise.maximo
+        ? analise.maximo + 1
+        : analise.maximo + margem;
+
+    return AlertDialog(
+      title: Text(analise.nome),
+      content: SizedBox(
+        width: 720,
+        height: 360,
+        child: LineChart(
+          LineChartData(
+            minX: 0,
+            maxX: math.max(1, analise.valores.length - 1).toDouble(),
+            minY: minY,
+            maxY: maxY,
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: false,
+              getDrawingHorizontalLine: (_) =>
+                  FlLine(color: Colors.black.withOpacity(0.08), strokeWidth: 1),
+            ),
+            borderData: FlBorderData(show: false),
+            titlesData: const FlTitlesData(
+              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              rightTitles: AxisTitles(
+                sideTitles: SideTitles(showTitles: false),
+              ),
+            ),
+            extraLinesData: ExtraLinesData(
+              horizontalLines: [
+                HorizontalLine(
+                  y: analise.media,
+                  strokeWidth: 2,
+                  dashArray: const [7, 5],
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(analise.observacao),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _InfoChip(
-                  label: 'Media',
-                  value: analise.media.toStringAsFixed(4),
+            lineBarsData: [
+              LineChartBarData(
+                spots: spots,
+                isCurved: spots.length > 2,
+                preventCurveOverShooting: true,
+                barWidth: 4,
+                isStrokeCapRound: true,
+                dotData: FlDotData(show: spots.length <= 24),
+                belowBarData: BarAreaData(
+                  show: true,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withOpacity(0.12),
                 ),
-                _InfoChip(
-                  label: 'Min',
-                  value: analise.minimo.toStringAsFixed(4),
-                ),
-                _InfoChip(
-                  label: 'Max',
-                  value: analise.maximo.toStringAsFixed(4),
-                ),
-                _InfoChip(
-                  label: 'Variacao',
-                  value: '${analise.variacaoPercentual.toStringAsFixed(2)}%',
-                ),
-                _InfoChip(label: 'Pontos', value: '${analise.quantidade}'),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(criadoEm, style: Theme.of(context).textTheme.bodySmall),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Fechar'),
+        ),
+      ],
     );
   }
 }
@@ -365,9 +561,20 @@ class _InfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Chip(
-      visualDensity: VisualDensity.compact,
-      label: Text('$label: $value'),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.65),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$label: $value',
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
     );
   }
 }
