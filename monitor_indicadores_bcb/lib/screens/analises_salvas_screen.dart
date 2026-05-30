@@ -6,10 +6,7 @@ import '../models/analise_draft.dart';
 import '../models/analise_salva.dart';
 
 class AnalisesSalvasScreen extends StatefulWidget {
-  const AnalisesSalvasScreen({
-    super.key,
-    this.draft,
-  });
+  const AnalisesSalvasScreen({super.key, this.draft});
 
   final AnaliseDraft? draft;
 
@@ -41,7 +38,9 @@ class _AnalisesSalvasScreenState extends State<AnalisesSalvasScreen> {
     final draft = widget.draft;
     if (draft == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Abra uma consulta analisada para salvar.')),
+        const SnackBar(
+          content: Text('Abra uma consulta analisada para salvar.'),
+        ),
       );
       return;
     }
@@ -82,12 +81,15 @@ class _AnalisesSalvasScreenState extends State<AnalisesSalvasScreen> {
   }
 
   Future<void> _confirmarExclusao(AnaliseSalva analise) async {
-    final confirmado = await showDialog<bool>(
+    final confirmado =
+        await showDialog<bool>(
           context: context,
           builder: (context) {
             return AlertDialog(
               title: const Text('Excluir analise?'),
-              content: Text('A analise "${analise.nome}" sera removida do Firestore.'),
+              content: Text(
+                'A analise "${analise.nome}" sera removida do Firestore.',
+              ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
@@ -111,15 +113,15 @@ class _AnalisesSalvasScreenState extends State<AnalisesSalvasScreen> {
     try {
       await _colecao.doc(analise.id).delete();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Analise excluida.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Analise excluida.')));
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao excluir: $error')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao excluir: $error')));
       }
     }
   }
@@ -152,7 +154,14 @@ class _AnalisesSalvasScreenState extends State<AnalisesSalvasScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Analises salvas'),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
+        title: const Text(
+          'Analises salvas',
+          style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -203,7 +212,9 @@ class _AnalisesSalvasScreenState extends State<AnalisesSalvasScreen> {
                         icon: _salvando
                             ? const SizedBox.square(
                                 dimension: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.save_outlined),
                         label: const Text('Salvar no Firestore'),
@@ -215,10 +226,7 @@ class _AnalisesSalvasScreenState extends State<AnalisesSalvasScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          Text(
-            'Historico',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          Text('Historico', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 12),
           StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
             stream: _colecao.orderBy('criadoEm', descending: true).snapshots(),
@@ -272,10 +280,7 @@ class _AnalisesSalvasScreenState extends State<AnalisesSalvasScreen> {
 }
 
 class _AnaliseSalvaCard extends StatelessWidget {
-  const _AnaliseSalvaCard({
-    required this.analise,
-    required this.onDelete,
-  });
+  const _AnaliseSalvaCard({required this.analise, required this.onDelete});
 
   final AnaliseSalva analise;
   final VoidCallback onDelete;
@@ -324,9 +329,18 @@ class _AnaliseSalvaCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                _InfoChip(label: 'Media', value: analise.media.toStringAsFixed(4)),
-                _InfoChip(label: 'Min', value: analise.minimo.toStringAsFixed(4)),
-                _InfoChip(label: 'Max', value: analise.maximo.toStringAsFixed(4)),
+                _InfoChip(
+                  label: 'Media',
+                  value: analise.media.toStringAsFixed(4),
+                ),
+                _InfoChip(
+                  label: 'Min',
+                  value: analise.minimo.toStringAsFixed(4),
+                ),
+                _InfoChip(
+                  label: 'Max',
+                  value: analise.maximo.toStringAsFixed(4),
+                ),
                 _InfoChip(
                   label: 'Variacao',
                   value: '${analise.variacaoPercentual.toStringAsFixed(2)}%',
@@ -335,10 +349,7 @@ class _AnaliseSalvaCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              criadoEm,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            Text(criadoEm, style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
       ),
@@ -347,10 +358,7 @@ class _AnaliseSalvaCard extends StatelessWidget {
 }
 
 class _InfoChip extends StatelessWidget {
-  const _InfoChip({
-    required this.label,
-    required this.value,
-  });
+  const _InfoChip({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -365,10 +373,7 @@ class _InfoChip extends StatelessWidget {
 }
 
 class _MensagemLista extends StatelessWidget {
-  const _MensagemLista({
-    required this.icon,
-    required this.texto,
-  });
+  const _MensagemLista({required this.icon, required this.texto});
 
   final IconData icon;
   final String texto;

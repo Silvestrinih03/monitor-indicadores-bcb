@@ -319,6 +319,7 @@ class _IndicadorCard extends StatefulWidget {
 class _IndicadorCardState extends State<_IndicadorCard> {
   final BcbService _bcbService = const BcbService();
   late Future<IndicadorValor?> _valorMaisRecente;
+  bool _hover = false;
 
   @override
   void initState() {
@@ -533,7 +534,6 @@ class _MensagemCentral extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(texto, textAlign: TextAlign.center),
-              // if (acao != null) ...[const SizedBox(height: 18), acao!],
             ],
           ),
         ),

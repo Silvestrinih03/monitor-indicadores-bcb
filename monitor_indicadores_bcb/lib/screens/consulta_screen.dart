@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_multi_formatter/formatters/masked_input_formatter.dart';
 
 import '../models/indicador.dart';
 import '../models/indicador_valor.dart';
@@ -6,10 +7,7 @@ import '../services/bcb_service.dart';
 import 'analise_screen.dart';
 
 class ConsultaScreen extends StatefulWidget {
-  const ConsultaScreen({
-    super.key,
-    required this.indicador,
-  });
+  const ConsultaScreen({super.key, required this.indicador});
 
   final Indicador indicador;
 
@@ -53,13 +51,18 @@ class _ConsultaScreenState extends State<ConsultaScreen> {
       return;
     }
 
-    final dataInicial =
-        IndicadorValor.formatoBcb.parseStrict(_dataInicialController.text);
-    final dataFinal = IndicadorValor.formatoBcb.parseStrict(_dataFinalController.text);
+    final dataInicial = IndicadorValor.formatoBcb.parseStrict(
+      _dataInicialController.text,
+    );
+    final dataFinal = IndicadorValor.formatoBcb.parseStrict(
+      _dataFinalController.text,
+    );
 
     if (dataInicial.isAfter(dataFinal)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('A data inicial deve ser anterior a data final.')),
+        const SnackBar(
+          content: Text('A data inicial deve ser anterior a data final.'),
+        ),
       );
       return;
     }
@@ -92,88 +95,164 @@ class _ConsultaScreenState extends State<ConsultaScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Consulta'),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
+        title: const Text(
+          'Consulta',
+          style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5),
+        ),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    indicador.nome,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Codigo SGS ${indicador.codigo}'
-                    '${indicador.unidade.isEmpty ? '' : ' | ${indicador.unidade}'}',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
+      body: Container(
+        color: const Color(0xFFF4F6FB),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _dataInicialController,
-                          readOnly: true,
-                          validator: _validarData,
-                          decoration: InputDecoration(
-                            labelText: 'Data inicial',
-                            border: const OutlineInputBorder(),
-                            suffixIcon: IconButton(
-                              tooltip: 'Escolher data inicial',
-                              icon: const Icon(Icons.calendar_month),
-                              onPressed: () => _selecionarData(_dataInicialController),
-                            ),
+                      Text(
+                        indicador.nome,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          'SGS ${indicador.codigo}',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _dataFinalController,
-                          readOnly: true,
-                          validator: _validarData,
-                          decoration: InputDecoration(
-                            labelText: 'Data final',
-                            border: const OutlineInputBorder(),
-                            suffixIcon: IconButton(
-                              tooltip: 'Escolher data final',
-                              icon: const Icon(Icons.calendar_month),
-                              onPressed: () => _selecionarData(_dataFinalController),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Período da consulta',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w900),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _dataInicialController,
+                              keyboardType: TextInputType.datetime,
+                              validator: _validarData,
+                              inputFormatters: [
+                                MaskedInputFormatter('##/##/####'),
+                              ],
+                              decoration: InputDecoration(
+                                labelText: 'Data inicial *',
+                                hintText: 'DD/MM/AAAA',
+                                filled: true,
+                                fillColor: const Color(0xFFF4F6FB),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide.none,
+                                ),
+                                suffixIcon: IconButton(
+                                  icon: const Icon(
+                                    Icons.calendar_month_rounded,
+                                  ),
+                                  onPressed: () =>
+                                      _selecionarData(_dataInicialController),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _dataFinalController,
+                              keyboardType: TextInputType.datetime,
+                              validator: _validarData,
+                              inputFormatters: [
+                                MaskedInputFormatter('##/##/####'),
+                              ],
+                              decoration: InputDecoration(
+                                labelText: 'Data final *',
+                                hintText: 'DD/MM/AAAA',
+                                filled: true,
+                                fillColor: const Color(0xFFF4F6FB),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide.none,
+                                ),
+                                suffixIcon: IconButton(
+                                  icon: const Icon(
+                                    Icons.calendar_month_rounded,
+                                  ),
+                                  onPressed: () =>
+                                      _selecionarData(_dataFinalController),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: FilledButton.icon(
+                          onPressed: _consultar,
+                          icon: const Icon(Icons.search_rounded),
+                          label: const Text(
+                            'Consultar período',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          style: FilledButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
                             ),
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: _consultar,
-                      icon: const Icon(Icons.search),
-                      label: const Text('Consultar periodo'),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: _ResultadoConsulta(
-              future: _consultaFuture,
-              indicador: indicador,
-              dataInicial: _dataInicialController.text,
-              dataFinal: _dataFinalController.text,
+            Expanded(
+              child: _ResultadoConsulta(
+                future: _consultaFuture,
+                indicador: indicador,
+                dataInicial: _dataInicialController.text,
+                dataFinal: _dataFinalController.text,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -260,17 +339,51 @@ class _ResultadoConsulta extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final item = valores[index];
 
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        child: Text('${index + 1}'),
-                      ),
-                      title: Text(item.dataFormatada),
-                      trailing: Text(
-                        item.valor.toStringAsFixed(4),
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.black.withOpacity(0.04)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Text(
+                            '${index + 1}',
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Text(
+                          item.dataFormatada,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        const Spacer(),
+                        Text(
+                          item.valor.toStringAsFixed(4),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w900),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -284,10 +397,7 @@ class _ResultadoConsulta extends StatelessWidget {
 }
 
 class _ResultadoMensagem extends StatelessWidget {
-  const _ResultadoMensagem({
-    required this.icon,
-    required this.texto,
-  });
+  const _ResultadoMensagem({required this.icon, required this.texto});
 
   final IconData icon;
   final String texto;

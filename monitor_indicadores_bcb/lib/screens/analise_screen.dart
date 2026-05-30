@@ -29,7 +29,14 @@ class AnaliseScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Analise'),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
+        title: const Text(
+          'Análise',
+          style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -109,7 +116,7 @@ class AnaliseScreen extends StatelessWidget {
               );
             },
             icon: const Icon(Icons.bookmark_add_outlined),
-            label: const Text('Salvar analise'),
+            label: const Text('Salvar análise'),
           ),
         ],
       ),
@@ -142,10 +149,8 @@ class AnaliseScreen extends StatelessWidget {
       gridData: FlGridData(
         show: true,
         drawVerticalLine: false,
-        getDrawingHorizontalLine: (value) => FlLine(
-          color: colorScheme.outlineVariant,
-          strokeWidth: 1,
-        ),
+        getDrawingHorizontalLine: (value) =>
+            FlLine(color: colorScheme.outlineVariant, strokeWidth: 1),
       ),
       borderData: FlBorderData(
         show: true,
@@ -153,13 +158,16 @@ class AnaliseScreen extends StatelessWidget {
       ),
       titlesData: FlTitlesData(
         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: 38,
             interval: intervaloX,
-            getTitlesWidget: (value, meta) => _bottomTitle(context, value, meta),
+            getTitlesWidget: (value, meta) =>
+                _bottomTitle(context, value, meta),
           ),
         ),
         leftTitles: AxisTitles(
@@ -213,10 +221,7 @@ class AnaliseScreen extends StatelessWidget {
     final data = valores[index].dataFormatada.substring(0, 5);
     return SideTitleWidget(
       meta: meta,
-      child: Text(
-        data,
-        style: Theme.of(context).textTheme.bodySmall,
-      ),
+      child: Text(data, style: Theme.of(context).textTheme.bodySmall),
     );
   }
 
@@ -261,10 +266,7 @@ class _StatCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  titulo,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                Text(titulo, style: Theme.of(context).textTheme.bodySmall),
                 FittedBox(
                   alignment: Alignment.centerLeft,
                   fit: BoxFit.scaleDown,
